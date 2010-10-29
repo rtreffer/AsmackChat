@@ -1,0 +1,15 @@
+== AsmackChat ==
+
+AsmackChat is a minimal chat application, listening for stanza broadcasts by
+AsmackService, storing everything into a database and showing a simple UI
+whenever a jabber chat is requested.
+
+== Goal ==
+
+Provide a minimal, non-obstrusive Chat application that can serve others as a
+starting point to explore the possiblities of xmpp on android.
+
+== Anti-Goal ==
+
+Transform the xmpp xep library into a backlog and try to "resolve" all missing
+features.

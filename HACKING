@@ -1,0 +1,21 @@
+== Overview message receive ==
+
+com.googlecode.asmack.chat.StanzaReceiver
+registered via AndroidManifest.xml
+
+StanzaReceiver <- Database.getDatabase
+StanzaReceiver.onReceive
+- filters the input (only <message>, ...)
+- creates ContentValues
+- stores the ContentValues into the database
+
+== Overview jabber chat start ==
+
+com.googlecode.asmack.chat.Chat
+registered via AndroidManifest.xml
+
+Uses AutoscrollListView with HistoryCursorAdapter to show the chat history.
+
+== General ==
+
+Please respect the goal of keeping this app simple but functional.
