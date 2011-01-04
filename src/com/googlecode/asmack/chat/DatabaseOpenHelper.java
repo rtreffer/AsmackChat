@@ -52,7 +52,7 @@ public class DatabaseOpenHelper extends SQLiteOpenHelper {
     /**
      * Current major database version.
      */
-    private final static short MAJOR = 3;
+    private final static short MAJOR = 4;
 
     /**
      * Current minor database version.

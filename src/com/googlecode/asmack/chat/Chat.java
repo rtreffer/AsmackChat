@@ -47,15 +47,13 @@ import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmlpull.v1.XmlSerializer;
 
 import android.app.Activity;
-import android.content.ComponentName;
+import android.app.NotificationManager;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.net.Uri;
 import android.net.Uri.Builder;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.os.RemoteException;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -96,11 +94,6 @@ public class Chat extends Activity implements OnClickListener {
     private EditText input;
 
     /**
-     * The xmpp service.
-     */
-    private IXmppTransportService service;
-
-    /**
      * XMLPullParser factory to generate a parser for messages.
      */
     private XmlPullParserFactory xmlPullParserFactory;
@@ -121,24 +114,9 @@ public class Chat extends Activity implements OnClickListener {
     public String fullJid;
 
     /**
-     * XmppServiceConnection that will automatically retrieve the full jid on
-     * bind.
+     * The system wide notification manager.
      */
-    private class XmppServiceConnection implements ServiceConnection {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            Chat.this.service = IXmppTransportService.Stub.asInterface(service);
-            try {
-                Chat.this.fullJid = Chat.this.service.getFullJidByBare(from);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            finish();
-        }
-    }
+    private NotificationManager notificationManager;
 
     /**
      * Initialize the members of this activity and bind to the xmpp transport
@@ -148,6 +126,10 @@ public class Chat extends Activity implements OnClickListener {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        notificationManager = (NotificationManager)
+                getApplicationContext()
+                    .getSystemService(Context.NOTIFICATION_SERVICE);
 
         try {
             xmlPullParserFactory = XmlPullParserFactory.newInstance();
@@ -161,12 +143,12 @@ public class Chat extends Activity implements OnClickListener {
 
         Intent serviceIntent =
             new Intent(IXmppTransportService.class.getCanonicalName());
-        bindService(
-            serviceIntent,
-            new XmppServiceConnection(),
-            0
-        );
         startService(serviceIntent);
+
+        serviceIntent =
+            new Intent(IChatService.class.getCanonicalName());
+        startService(serviceIntent);
+
         Intent intent = getIntent();
         String toFrom = intent.getData().getPathSegments().get(0);
         Log.d("Chat", toFrom);
@@ -195,6 +177,9 @@ public class Chat extends Activity implements OnClickListener {
         send.setOnClickListener(this);
         input = (EditText) findViewById(R.id.ChatInput);
         input.setHint("Send " + XMPPUtils.getUser(to) + " a message");
+        input.requestFocus();
+
+        notificationManager.cancel(toFrom, 1);
     }
 
     /**
@@ -206,10 +191,6 @@ public class Chat extends Activity implements OnClickListener {
     public void onClick(View v) {
         if (input == null) {
             Log.d(TAG, "input is null");
-            return;
-        }
-        if (service == null) {
-            Log.d(TAG, "service is null");
             return;
         }
         String msg = input.getEditableText().toString();
@@ -234,20 +215,24 @@ public class Chat extends Activity implements OnClickListener {
         }
         ArrayList<Attribute> attributes = new ArrayList<Attribute>();
         attributes.add(new Attribute("type", "", "chat"));
-        attributes.add(new Attribute("from", "", fullJid));
         attributes.add(new Attribute("to", "", this.to));
         attributes.add(new Attribute(
                 "id",
                 "",
                 ID + "-" + Integer.toHexString(atomicInt.incrementAndGet()))
         );
-        try {
-            service.send(
-                new Stanza("message", "", from, xml.toString(), attributes)
-            );
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+
+        Stanza stanza =
+            new Stanza("message", "", from, xml.toString(), attributes);
+        Intent intent = new Intent();
+        intent.setAction("com.googlecode.asmack.intent.XMPP.STANZA.SEND");
+        intent.putExtra("stanza", stanza);
+        intent.addFlags(Intent.FLAG_FROM_BACKGROUND);
+        getApplicationContext().sendBroadcast(
+            intent,
+            "com.googlecode.asmack.intent.XMPP.STANZA.SEND"
+        );
+
         ContentValues values = new ContentValues();
         values.put("ts", System.currentTimeMillis());
         values.put("via", from);

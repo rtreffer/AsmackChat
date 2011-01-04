@@ -20,15 +20,27 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name="StanzaReceiver">
+        <service android:name=".ChatService" android:exported="true">
           <intent-filter>
-            <action android:name="com.googlecode.asmack.intent.XMPP.STANZA" />
+              <action android:name="com.googlecode.asmack.chat.IChatService" />
+          </intent-filter>
+        </service>
+
+        <receiver android:name=".BootCompletedReceiver">
+          <intent-filter>
+            <action android:name="android.intent.action.BOOT_COMPLETED" />
+            <category android:name="android.intent.category.HOME" />
+          </intent-filter>
+          <intent-filter>
+            <action android:name="android.intent.action.TIME_TICK" />
           </intent-filter>
         </receiver>
 
     </application>
 
-    <uses-permission android:name="com.googlecode.asmack.android.RECEIVE_STANZAS" />
+    <uses-permission android:name="com.googlecode.asmack.intent.XMPP.STANZA.RECEIVE" />
+    <uses-permission android:name="com.googlecode.asmack.intent.XMPP.STANZA.SEND" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-sdk android:minSdkVersion="8" />
 
